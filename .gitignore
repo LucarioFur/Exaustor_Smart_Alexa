@@ -1,0 +1,11 @@
+build/
+.pio/
+.vscode/
+*.bin
+*.elf
+*.map
+*.hex
+*.zip
+*.log
+secrets.h
+.env

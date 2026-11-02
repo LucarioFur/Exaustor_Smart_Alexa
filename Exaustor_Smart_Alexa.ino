@@ -172,6 +172,7 @@ void AtualizarAlexaEstado();
  * ========================= */
 void IRAM_ATTR isrFan1Tach()
 {
+  // Ignora flancos demasiado próximos antes de contar un pulso del tacómetro.
   uint32_t now = micros();
   if ((now - lastTachUs1) >= TACH_DEBOUNCE_US)
   {
@@ -213,6 +214,7 @@ void FAN_Power12V(bool on)
  * ========================= */
 uint32_t ConverterPercentParaRPM(uint8_t percent)
 {
+  // El cero apaga; del 1 al 100 % se recorre el intervalo de RPM configurado.
   if (percent == 0) return 0;
   return map(percent, 1, 100, RPM_GLOBAL_MIN, RPM_GLOBAL_MAX);
 }
@@ -280,6 +282,7 @@ void AtualizarRPMFan(fan_ctrl_t *fan, uint32_t janelaMs)
 {
   uint32_t pulsos = 0;
 
+  // Copia y vacía el contador compartido con la interrupción.
   noInterrupts();
   pulsos = *(fan->tachCount);
   *(fan->tachCount) = 0;
@@ -297,11 +300,13 @@ void AtualizarRPMFan(fan_ctrl_t *fan, uint32_t janelaMs)
     return;
   }
 
+  // Usa la duración real de la ventana y los pulsos por vuelta del ventilador.
   fan->rpm = (pulsos * 60000UL) / ((uint32_t)fan->ppr * janelaMs);
 }
 
 void ProcessarPartidaFan(fan_ctrl_t *fan, uint32_t now)
 {
+  // Mantiene el PWM de arranque durante un tiempo antes de regular las RPM.
   if (fan->rpmTarget == 0)
   {
     fan->startBoostActive = false;
@@ -344,6 +349,7 @@ void ControlarFanRPM(fan_ctrl_t *fan)
     return;
   }
 
+  // Corrige por pasos fuera de la banda muerta; aquí no se calcula un PID.
   int32_t erro = (int32_t)fan->rpmTarget - (int32_t)fan->rpm;
 
   if (erro > FAN_CTRL_DEADBAND_RPM)
@@ -375,6 +381,7 @@ void ControlarFanRPM(fan_ctrl_t *fan)
 
 void ControleRPMTodosFans()
 {
+  // Los tres ventiladores comparten consigna, pero cada uno ajusta su propio PWM.
   uint32_t now = millis();
   if ((now - lastCtrlMs) < RPM_CTRL_PERIOD_MS) return;
 
@@ -492,6 +499,7 @@ void FAN_RequestSoftStop()
 
 void ProcessarSoftStop()
 {
+  // Reduce la consigna por intervalos, sin bloquear el bucle con una espera.
   if (!softStopActive) return;
   if (!fansLigados)   { softStopActive = false; return; }
 
@@ -534,6 +542,7 @@ void AtualizarAlexaEstado()
 
 void AlexaExaustorChanged(uint8_t brightness)
 {
+  // Espalexa entrega un valor de brillo; se convierte a porcentaje de velocidad.
   uint8_t percent = ConverterAlexaBrightnessParaPercent(brightness);
 
   if (percent == 0)
@@ -567,6 +576,7 @@ void IniciarAlexa()
  * ========================= */
 void SalvarParametros()
 {
+  // Conserva la última velocidad elegida para recuperarla tras un reinicio.
   prefs.putUChar("man_speed", manualSpeedPercent);
 }
 
